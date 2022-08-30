@@ -1,4 +1,20 @@
 # Links-R-Us-2
+Link-R-Us is a search engine.
+It will allows users to submit URLs. The search engine will crawl these links, index their content and add any newly encountered links to its database for further crawling.
+
+The search engine implementation is based on PageRank algorithim based on the paper titled <i><b>The PageRank Citation Ranking: Bringing Order to the Web</b></i> by <i><b>Larry Page, Sergey Brin, Rajeev Motwani, and Terry Winograd</i></b>
+
+The search engine consists of the following components: -
+- Crawler
+    - Link Filter
+    - Link Fetcher
+    - Content Extractor
+    - Link Extractor
+- Content Indexer
+- Page Rank Calculator
+- Link Graph
+- Link Provider
+- Frontend
 
 # SLA
 |Metric                                             |Expectation                      |Measurement Period | Notes|
