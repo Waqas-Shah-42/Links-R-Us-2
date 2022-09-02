@@ -26,6 +26,7 @@ jobs:
       run: make -f MakeFile test
       
     - name: test-coverage-archieve
+      uses: actions/upload-artifact@v3
       with:
         name: test-coverage
         path: coverage.out
