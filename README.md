@@ -35,7 +35,32 @@ The search engine consists of the following components: -
 located page 170
 ```mermaid
 flowchart LR
-    A[hello] --> B;
-    B(lols)
+    G[Link Provider]
+    subgraph .
+    subgraph crawler
+        A[Link Filter] --> B;
+        B[Link Fetcher] --> C;
+        C[Content Extractor];
+        D[Link Extractor];
+        B --> D;
+    end
+    J[Link Graph]
+    H[Frontend]
+    E[Content Indexer]
+    F[PageRank Calculator]
+    
+
+    end
+    
+    
+    C --> E
+    E --> F
+    G --> A
+    J --> F
+    J --> H
+    J --> D
+    J --> A
+    E --> H
+
 ```
 [1]: http://ilpubs.stanford.edu:8090/422/
