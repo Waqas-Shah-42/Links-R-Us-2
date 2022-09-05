@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  # elasticsearch parameters https://www.elastic.co/guide/en/elasticsearch/reference/current/advanced-configuration.html
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.6
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - CLI_JAVA_OPTS="-Xms2g -Xmx2g" # Set max and min memory to 2GB
+      #- node.processors=1
+      #- ELASTIC_PASSWORD: Temp123!
+
