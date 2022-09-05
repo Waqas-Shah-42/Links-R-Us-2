@@ -2,7 +2,7 @@
 <sub>\*This project is based on the book [Hands-On Software Engineering with Golang](https://www.packtpub.com/product/hands-on-software-engineering-with-golang/9781838554491)</sub>
 
 Link-R-Us is a search engine.
-It will allows users to submit URLs. The search engine will crawl these links, index their content and add any newly encountered links to its database for further crawling.
+It allows users to submit URLs. The search engine will crawl these links, index their content and add any newly encountered links to its database for further crawling.
 
 The search engine implementation is based on PageRank algorithim based on the paper titled <i><b>The PageRank Citation Ranking: Bringing Order to the Web</b></i> by <cite>[Larry Page, Sergey Brin, Rajeev Motwani, and Terry Winograd][1]</cite>
 
@@ -37,22 +37,18 @@ located page 170
 flowchart LR
     G[Link Provider]
     subgraph .
-    subgraph crawler
-        A[Link Filter] --> B;
-        B[Link Fetcher] --> C;
-        C[Content Extractor];
-        D[Link Extractor];
-        B --> D;
+        subgraph crawler
+            A[Link Filter] --> B;
+            B[Link Fetcher] --> C;
+            C[Content Extractor];
+            D[Link Extractor];
+            B --> D;
+        end
+        J[Link Graph]
+        H[Frontend]
+        E[Content Indexer]
+        F[PageRank Calculator]
     end
-    J[Link Graph]
-    H[Frontend]
-    E[Content Indexer]
-    F[PageRank Calculator]
-    
-
-    end
-    
-    
     C --> E
     E --> F
     G --> A
@@ -61,6 +57,24 @@ flowchart LR
     J --> D
     J --> A
     E --> H
+
+```
+
+# ERD Diagrams
+```mermaid
+erDiagram
+    Edge ||--|{ Link : isPartOfEdge
+    Link {
+        UUID ID
+        string URL
+        timetime RetrievedAt
+    }
+    Edge {
+        UUID ID
+        Link Source
+        Link Destination
+        timetime UpdatedAt
+    }
 
 ```
 [1]: http://ilpubs.stanford.edu:8090/422/
