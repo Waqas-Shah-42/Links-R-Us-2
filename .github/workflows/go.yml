@@ -1,6 +1,7 @@
 name: Go
 
 on:
+  #workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
@@ -8,7 +9,7 @@ on:
 
 jobs:
 
-  build:
+  Test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -24,7 +25,7 @@ jobs:
     - name: Test
 #      run: go test -v ./...
       run: make -f MakeFile test
-      
+
     - name: test-coverage-archieve
       uses: actions/upload-artifact@v3
       with:
