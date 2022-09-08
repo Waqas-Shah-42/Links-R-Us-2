@@ -123,3 +123,20 @@ func (i *InMemoryBleveIndexer) Search(q index.Query) (index.Iterator, error) {
 	}
 	return &bleveIterator{idx: i, searchReq: searchReq, rs: rs, cumIdx:q.Offset}, nil
 }
+
+func NewInMemoryBleveIndexer() (*InMemoryBleveIndexer, error) {
+	mapping := bleve.NewIndexMapping()
+	idx, err := bleve.NewMemOnly(mapping)
+	if err != nil {
+		return nil, err
+	}
+
+	return &InMemoryBleveIndexer{
+		idx:  idx,
+		docs: make(map[string]*index.Document),
+	}, nil
+}
+
+func (i *InMemoryBleveIndexer) Close() error {
+	return i.idx.Close()
+}
