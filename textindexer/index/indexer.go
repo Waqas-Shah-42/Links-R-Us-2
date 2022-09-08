@@ -32,9 +32,9 @@ type Indexer interface {
 	// Inserts document to the index or updates the index entry.
 	Index(doc *Document) error
 
-	FindByID(LinkID uuid.UUID) (*Document, error)
+	FindByID(linkID uuid.UUID) (*Document, error)
 	Search(query Query) (Iterator, error)
-	UpdateScore(LinkID uuid.UUID, score float64) error
+	UpdateScore(linkID uuid.UUID, score float64) error
 }
 
 type Iterator interface {

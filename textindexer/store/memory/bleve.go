@@ -78,7 +78,6 @@ func (i *InMemoryBleveIndexer) findByID(linkID string) (*index.Document, error) 
 
 	if d, found := i.docs[linkID]; found {
 		return copyDoc(d), nil
-
 	}
 	return nil, xerrors.Errorf("find by ID: %w", index.ErrNotFound)
 }
@@ -102,11 +101,10 @@ func (i *InMemoryBleveIndexer) UpdateScore(linkedID uuid.UUID, score float64) er
 
 }
 
-
 func (i *InMemoryBleveIndexer) Search(q index.Query) (index.Iterator, error) {
 	var bq query.Query
 	switch q.Type {
-	case index.QueryTypeMatch:
+	case index.QueryTypePhrase:
 		bq = bleve.NewMatchPhraseQuery(q.Expression)
 	default:
 		bq = bleve.NewMatchQuery(q.Expression)
@@ -121,7 +119,7 @@ func (i *InMemoryBleveIndexer) Search(q index.Query) (index.Iterator, error) {
 	if err != nil {
 		return nil, xerrors.Errorf("search : %w", err)
 	}
-	return &bleveIterator{idx: i, searchReq: searchReq, rs: rs, cumIdx:q.Offset}, nil
+	return &bleveIterator{idx: i, searchReq: searchReq, rs: rs, cumIdx: q.Offset}, nil
 }
 
 func NewInMemoryBleveIndexer() (*InMemoryBleveIndexer, error) {
