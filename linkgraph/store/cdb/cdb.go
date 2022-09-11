@@ -2,8 +2,10 @@ package cdb
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/Waqas-Shah-42/Links-R-Us-2/linkgraph/graph"
+	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 )
 
@@ -59,4 +61,27 @@ func (c *CockroachDBGraph) UpsertLink(link *graph.Link) error {
 	return nil
 }
 
+func (c *CockroachDBGraph) FindLink(id uuid.UUID) (*graph.Link, error) {
+	row := c.db.QueryRow(findLinkQuery,id)
+	link := &graph.Link{ID: id}
+	if err := row.Scan(&link.URL, &link.RetrievedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, xerrors.Errorf("find link: %w", graph.ErrNotFound)
+		}
+		return nil, xerrors.Errorf("find link: %w", err)
+	}
 
+	link.RetrievedAt = link.RetrievedAt.UTC()
+	return link, nil
+}
+
+
+// Returns link iterator for the provided values
+func (c *CockroachDBGraph) Links(fromID, toID uuid.UUID, accessedBefore time.Time) (graph.LinkIterator, error) {
+	rows, err := c.db.Query(linksInPartitionQuery, fromID,toID,accessedBefore.UTC())
+	if err != nil {
+		return nil, xerrors.Errorf("links: %w", err)
+	}
+
+	return &linkIterator{rows: rows}, nil
+}
