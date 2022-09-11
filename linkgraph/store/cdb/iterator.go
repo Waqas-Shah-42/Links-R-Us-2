@@ -47,3 +47,11 @@ func (i *linkIterator) Close() error {
 func (i *linkIterator) Link() *graph.Link {
 	return i.latchedLink
 }
+
+
+//edgeIterator
+type edgeIterator struct {
+	rows 	*sql.Rows
+	lastErr	error
+	latchedEdge *graph.Edge
+}
