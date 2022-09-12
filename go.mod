@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/blevesearch/bleve v1.0.14
+	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/google/uuid v1.3.0
 	github.com/lib/pq v1.10.7
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f
@@ -23,15 +24,19 @@ require (
 	github.com/blevesearch/zap/v15 v15.0.3 // indirect
 	github.com/couchbase/vellum v1.0.2 // indirect
 	github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2 // indirect
-	github.com/golang/protobuf v1.3.2 // indirect
-	github.com/golang/snappy v0.0.1 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
-	github.com/kr/text v0.1.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
 	github.com/tinylib/msgp v1.1.0 // indirect
-	github.com/willf/bitset v1.1.10 // indirect
-	go.etcd.io/bbolt v1.3.5 // indirect
-	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
+	github.com/willf/bitset v1.1.11 // indirect
+	go.etcd.io/bbolt v1.3.6 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	golang.org/x/sys v0.0.0-20220317061510-51cd9980dadf // indirect
+	google.golang.org/protobuf v1.27.1 // indirect
 )
