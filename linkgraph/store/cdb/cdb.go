@@ -111,7 +111,7 @@ func (c *CockroachDBGraph) UpsertEdge(edge *graph.Edge) error {
 	return nil
 }
 
-func (c *CockroachDBGraph) Edges(fromID, toID uuid.UUID, updatedBefore time.Time) (graph.Iterator, error) {
+func (c *CockroachDBGraph) Edges(fromID, toID uuid.UUID, updatedBefore time.Time) (graph.EdgeIterator, error) {
 	rows, err := c.db.Query(edgesInPartitionQuery, fromID, toID, updatedBefore.UTC())
 	if err != nil {
 		return nil,xerrors.Errorf("edges: %w", err)
@@ -120,3 +120,13 @@ func (c *CockroachDBGraph) Edges(fromID, toID uuid.UUID, updatedBefore time.Time
 	return &edgeIterator{rows:rows}, nil
 }
 
+
+func (c *CockroachDBGraph) RemoveStaleEdges(fromID uuid.UUID, updatedBefore time.Time) error {
+	_, err := c.db.Exec(removeStaleEdgesQuery,fromID, updatedBefore.UTC())
+	if err != nil {
+		return xerrors.Errorf("remove stale edges: %w", err)
+	}
+
+	return nil
+
+}
