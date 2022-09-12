@@ -63,7 +63,7 @@ func (i *edgeIterator) Next() bool {
 	}
 
 	e := new(graph.Edge)
-	i.lastErr := i.rows.Scan(&e.ID, &e.Src, &e.UpdatedAt)
+	i.lastErr = i.rows.Scan(&e.ID, &e.Src, &e.UpdatedAt)
 
 	if i.lastErr != nil {
 		return false
@@ -74,4 +74,20 @@ func (i *edgeIterator) Next() bool {
 	return true
 }
 
+
+func (i *edgeIterator) Error() error {
+	return i.lastErr
+}
+
+func (i *edgeIterator) Close() error {
+	err := i.rows.Close()
+	if err != nil {
+		return xerrors.Errorf("edge iterator: %w", err)
+	}
+	return nil
+}
+
+func (i *edgeIterator) Edge() *graph.Edge {
+	return i.latchedEdge
+}
 
