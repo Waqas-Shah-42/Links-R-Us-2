@@ -6,6 +6,7 @@ import (
 
 	"github.com/Waqas-Shah-42/Links-R-Us-2/linkgraph/graph"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"golang.org/x/xerrors"
 )
 
@@ -85,3 +86,37 @@ func (c *CockroachDBGraph) Links(fromID, toID uuid.UUID, accessedBefore time.Tim
 
 	return &linkIterator{rows: rows}, nil
 }
+
+
+// isForeignKeyViolationError returns true if err indicates a foreign key
+// constraint violation.
+func isForeignKeyViolationError(err error) bool {
+	pqErr, valid := err.(*pq.Error)
+	if !valid {
+		return false
+	}
+
+	return pqErr.Code.Name() == "foreign_key_violation"
+}
+
+func (c *CockroachDBGraph) UpsertEdge(edge *graph.Edge) error {
+	row := c.db.QueryRow(upsertEdgeQuery,edge.Src,edge.Dst)
+	if err := row.Scan(&edge.ID, edge.UpdatedAt);  err != nil {
+		if isForeignKeyViolationError(err) {
+			err = graph.ErrUnknownEdgeLinks
+		}
+		return xerrors.Errorf("upsert Edge: %w", err)
+	}
+	edge.UpdatedAt = edge.UpdatedAt.UTC()
+	return nil
+}
+
+func (c *CockroachDBGraph) Edges(fromID, toID uuid.UUID, updatedBefore time.Time) (graph.Iterator, error) {
+	rows, err := c.db.Query(edgesInPartitionQuery, fromID, toID, updatedBefore.UTC())
+	if err != nil {
+		return nil,xerrors.Errorf("edges: %w", err)
+	}
+
+	return &edgeIterator{rows:rows}, nil
+}
+

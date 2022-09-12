@@ -55,3 +55,23 @@ type edgeIterator struct {
 	lastErr	error
 	latchedEdge *graph.Edge
 }
+
+
+func (i *edgeIterator) Next() bool {
+	if i.lastErr !=nil || !i.rows.Next() {
+		return false
+	}
+
+	e := new(graph.Edge)
+	i.lastErr := i.rows.Scan(&e.ID, &e.Src, &e.UpdatedAt)
+
+	if i.lastErr != nil {
+		return false
+	}
+
+	e.UpdatedAt = e.UpdatedAt.UTC()
+	i.latchedEdge = e
+	return true
+}
+
+
