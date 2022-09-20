@@ -1,6 +1,7 @@
 package es
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/Waqas-Shah-42/Links-R-Us-2/textindexer/index"
 	"github.com/elastic/go-elasticsearch"
 	"github.com/elastic/go-elasticsearch/esapi"
+	"github.com/google/uuid"
 	"golang.org/x/xerrors"
 )
 
@@ -130,4 +132,61 @@ func NewElasticSearchIndexer(esNodes []string, syncUpdates bool) (*ElasticSearch
 	if err = ensureIndex(es); err != nil {
 		return nil, err
 	}
+
+	refreshOpt := es.Update.WithRefresh("false")
+	if syncUpdates {
+		refreshOpt = es.Update.WithRefresh("true")
+	}
+
+	return &ElasticSearchIndexer{
+		es:	es,
+		refreshOpt: refreshOpt,
+	}, nil
 }
+
+func makeEsDoc(d *index.Document) esDoc {
+	// Note: we intentionally skip PageRank as we don't want updates to
+	// overwrite existing PageRank values.
+	return esDoc{
+		LinkID:    d.LinkID.String(),
+		URL:       d.URL,
+		Title:     d.Title,
+		Content:   d.Content,
+		IndexedAt: d.IndexedAt.UTC(),
+	}
+}
+
+
+func (i *ElasticSearchIndexer) Index(doc *index.Document) error {
+	if doc.LinkID == uuid.nil {
+		return xerrors.Errorf("index: %w", index.ErrMissingLinkID)
+	}
+
+	var (
+		buf bytes.Buffer
+		esDoc = makeEsDoc(doc)
+	)
+
+	update := map[string]interface{}{
+		"doc": esDoc,
+		"doc_as_upsert": true,
+	}
+
+	if err := json.NewEncoder(&buf).Encode(update); err != nil {
+		return xerrors.Errorf("index: %w", err)
+	}
+
+	res, err := i.es.Update(indexName, esDoc.LinkID, &buf, i.refreshOpt)
+	if err != nil {
+		return xerrors.Errorf("index: %w", err)
+	}
+
+	var updateRes esUpdateRes
+	if err = unmarshalResponse(res, &updateRes); err != nil {
+		return xerrors.Errorf("index: %w", err)
+	}
+
+	return nil
+}
+
+func (i *ElasticSearchIndexer) FindByID(linkID uuid.UUID) (*index.Document, error)
