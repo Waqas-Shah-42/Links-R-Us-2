@@ -2,6 +2,7 @@ package es
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -34,20 +35,20 @@ var esMappings = `
 }`
 
 type esSearchRes struct {
-	Hits esSearchResHits `json: "hits"`
+	Hits esSearchResHits `json:"hits"`
 }
 
 type esSearchResHits struct {
-	Total   esTotal        `json: "total"`
-	HitList []esHitWrapper `json: "hits"`
+	Total   esTotal        `json:"total"`
+	HitList []esHitWrapper `json:"hits"`
 }
 
 type esTotal struct {
-	Count uint64 `json: "value"`
+	Count uint64 `json:"value"`
 }
 
 type esHitWrapper struct {
-	DocSource esDoc `json: "_source"`
+	DocSource esDoc `json:"_source"`
 }
 
 type esDoc struct {
@@ -158,7 +159,7 @@ func makeEsDoc(d *index.Document) esDoc {
 
 
 func (i *ElasticSearchIndexer) Index(doc *index.Document) error {
-	if doc.LinkID == uuid.nil {
+	if doc.LinkID == uuid.Nil {
 		return xerrors.Errorf("index: %w", index.ErrMissingLinkID)
 	}
 
@@ -189,4 +190,134 @@ func (i *ElasticSearchIndexer) Index(doc *index.Document) error {
 	return nil
 }
 
-func (i *ElasticSearchIndexer) FindByID(linkID uuid.UUID) (*index.Document, error)
+func runSearch(es *elasticsearch.Client, searchQuery map[string]interface{}) (*esSearchRes, error) {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(searchQuery); err != nil {
+		return nil, xerrors.Errorf("find by ID: %w", err)
+	}
+
+	// Perform the search request.
+	res, err := es.Search(
+		es.Search.WithContext(context.Background()),
+		es.Search.WithIndex(indexName),
+		es.Search.WithBody(&buf),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var esRes esSearchRes
+	if err = unmarshalResponse(res, &esRes); err != nil {
+		return nil, err
+	}
+
+	return &esRes, nil
+}
+
+func mapEsDoc(d *esDoc) *index.Document {
+	return &index.Document{
+		LinkID:    uuid.MustParse(d.LinkID),
+		URL:       d.URL,
+		Title:     d.Title,
+		Content:   d.Content,
+		IndexedAt: d.IndexedAt.UTC(),
+		PageRank:  d.PageRank,
+	}
+}
+
+func (i *ElasticSearchIndexer) FindByID(linkID uuid.UUID) (*index.Document, error) {
+	var buf bytes.Buffer
+	// map[string]interface{} is used to store unknown struct data
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match": map[string]interface{}{
+				"LinkID": linkID.String(),
+			},
+		},
+		"from": 0,
+		"size": 1,
+	}
+	if err := json.NewEncoder(&buf).Encode(query); err != nil {
+		return nil, xerrors.Errorf("find by ID: %w", err)
+	}
+
+	searchRes, err := runSearch(i.es, query)
+
+	if err != nil {
+		return nil, xerrors.Errorf("find by ID: %w", err)
+	}
+	if len(searchRes.Hits.HitList) != 1 {
+		return nil, xerrors.Errorf("find by ID: %w", index.ErrNotFound)
+	}
+
+	return mapEsDoc(&searchRes.Hits.HitList[0].DocSource), nil
+
+}
+
+func (i *ElasticSearchIndexer) Search(q index.Query) (index.Iterator, error) {
+	var qtype string
+	switch q.Type {
+	case index.QueryTypePhrase:
+		qtype = "phrase"
+	default:
+		qtype = "best_fields"
+	}
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"function_score": map[string]interface{}{
+				"query": map[string]interface{}{
+					"multi_match": map[string]interface{}{
+						"type":   qtype,
+						"query":  q.Expression,
+						"fields": []string{"Title", "Content"},
+					},
+				},
+				"script_score": map[string]interface{}{
+					"script": map[string]interface{}{
+						"source": "_score + doc['PageRank'].value",
+					},
+				},
+			},
+		},
+		"from": q.Offset,
+		"size": batchSize,
+	}
+
+	searchRes, err := runSearch(i.es, query)
+	if err != nil {
+		return nil, xerrors.Errorf("search: %w", err)
+	}
+
+	return &esIterator{es: i.es, searchReq: query, rs: searchRes, cumIdx: q.Offset}, nil
+}
+
+
+// UpdateScore updates the PageRank score for a document with the
+// specified link ID. If no such document exists, a placeholder
+// document with the provided score will be created.
+func (i *ElasticSearchIndexer) UpdateScore(linkID uuid.UUID, score float64) error {
+	var buf bytes.Buffer
+	update := map[string]interface{}{
+		"doc": map[string]interface{}{
+			"LinkID":   linkID.String(),
+			"PageRank": score,
+		},
+		"doc_as_upsert": true,
+	}
+	if err := json.NewEncoder(&buf).Encode(update); err != nil {
+		return xerrors.Errorf("update score: %w", err)
+	}
+
+	res, err := i.es.Update(indexName, linkID.String(), &buf, i.refreshOpt)
+	if err != nil {
+		return xerrors.Errorf("update score: %w", err)
+	}
+
+	var updateRes esUpdateRes
+	if err = unmarshalResponse(res, &updateRes); err != nil {
+		return xerrors.Errorf("update score: %w", err)
+	}
+
+	return nil
+}
