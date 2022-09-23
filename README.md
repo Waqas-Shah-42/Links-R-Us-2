@@ -77,4 +77,18 @@ erDiagram
     }
 
 ```
+## Running test cases:
+Export the environment cariables:
+- export CDB_DSN='postgresql://root@localhost:26257/defaultdb?sslmode=disable'
+- export ES_NODES='http://localhost:9200'
+- bring up the containers by doing to infra directory and then running 
+```bash
+docker compose up
+```
+
+run command: 
+```bash
+make -f Makefile test
+```
+
 [1]: http://ilpubs.stanford.edu:8090/422/
